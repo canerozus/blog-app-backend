@@ -4,7 +4,7 @@ const register = async (req, res) => {
     const { username, password } = req.body;
     try {
         const userDoc = await User.create({ username, password });
-        res.status(200).json(userDoc);
+        res.status(200).json("User has been created!");
     }
     catch (err) {
         if (err.code === 11000 && err.keyValue && err.keyValue.username) {
