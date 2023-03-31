@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const app = express();
 const authRoutes = require('./routes/auth.js');
-app.use(cors());
+app.use(cors({credentials:true, origin:"http://localhost:3000"}));
 app.use(express.json());
 
 mongoose.connect("mongodb+srv://canerozus:d3Jp7zlIAobueKhB@cluster0.a7dt3ll.mongodb.net/?retryWrites=true&w=majority")
