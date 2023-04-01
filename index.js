@@ -5,8 +5,8 @@ const app = express();
 const authRoutes = require('./routes/auth.js');
 app.use(cors({credentials:true, origin:"http://localhost:3000"}));
 app.use(express.json());
-
 mongoose.connect("mongodb+srv://canerozus:d3Jp7zlIAobueKhB@cluster0.a7dt3ll.mongodb.net/?retryWrites=true&w=majority")
+
 app.use("/api/auth", authRoutes);
 
 app.listen(8800, () => {
