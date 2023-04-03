@@ -22,14 +22,15 @@ const login = async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        const user = await User.findOne({ username});
+        const user = await User.findOne({ username });
         const passCheck = bcrypt.compareSync(password, user.password);
+        if(!user) return res.status(401).json("No username found!");
         if(passCheck){
             jwt.sign({username,id:user._id},"secretKey", (err, token)=>{
-            res.cookie("token", token).json(user);
+            res.cookie("token", token).json("logging In",);
             })
         } else {
-            return res.status(400).json('Invalid username or password!');
+            return res.status(403).json('Invalid username or password!');
         }
     }
     catch (err) {
