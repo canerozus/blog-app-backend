@@ -23,8 +23,8 @@ const login = async (req, res) => {
 
     try {
         const user = await User.findOne({ username });
-        const passCheck = bcrypt.compareSync(password, user.password);
         if(!user) return res.status(401).json("No username found!");
+        const passCheck = bcrypt.compareSync(password, user.password);
         if(passCheck){
             jwt.sign({username,id:user._id},"secretKey", (err, token)=>{
             res.cookie("token", token).json("logging In",);
