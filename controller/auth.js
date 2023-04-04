@@ -19,7 +19,7 @@ const register = async (req, res) => {
 };
 
 const login = async (req, res) => {
-    const { username, password } = req.body; 
+    const { username, password } = req.body;
 
     try {
         const user = await User.findOne({ username });
@@ -37,5 +37,11 @@ const login = async (req, res) => {
         console.log(err)
     }
 }
+const logout = (req, res) => {
+    res.clearCookie("token", {
+        secure: true,
+        sameSite: "none"
+    }).status(200).json("User logged out.")
+}
 
-module.exports = { register, login }  
+module.exports = { register, login, logout };  

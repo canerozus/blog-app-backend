@@ -5,6 +5,7 @@ const profile = async  (req,res) => {
     jwt.verify(token,"secretKey", (err, info) => {
         if(err) throw err;
         res.json(info)
+       
     })
 }
 
