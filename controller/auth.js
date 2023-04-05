@@ -27,7 +27,11 @@ const login = async (req, res) => {
         const passCheck = bcrypt.compareSync(password, user.password);
         if(passCheck){
             jwt.sign({username,id:user._id},"secretKey", (err, token)=>{
-            res.cookie("token", token).json("logging In",);
+            res.cookie("token", token).json({
+                message:"logging in",
+                id:user._id,
+                username
+            })
             })
         } else {
             return res.status(403).json('Invalid username or password!');

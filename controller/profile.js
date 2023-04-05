@@ -2,11 +2,14 @@ const jwt = require('jsonwebtoken');
 
 const profile = async  (req,res) => {
     const {token} = req.cookies;
-    jwt.verify(token,"secretKey", (err, info) => {
+    if(token){
+    jwt.verify(token,"secretKey", {}, (err, info) => {
         if(err) throw err;
-        res.json(info)
-       
-    })
+        res.json(info) 
+        
+    })} else {
+        return res.status(200).json("no token found")
+    }
 }
 
 module.exports = {profile}
