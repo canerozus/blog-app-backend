@@ -10,7 +10,9 @@ const post = async (req, res) => {
             return res.status(500).json({ message: "Failed to upload" });
         }
         const { title, summary, content } = req.body;
-        console.log({title});
+        if (!title ||!summary || content.length <= 50) {
+            return res.status(400).json({ message: "Missing required fields! (Content length must at least 50 letter.)" });
+        }
         let fileUrl;
         if (req.file) {
             const { originalname, path } = req.file;
@@ -27,7 +29,7 @@ const post = async (req, res) => {
                 content,
                 fileUrl 
             });
-            res.json({ post });
+            res.json({ message: 'Post has been created', post });
         } catch (error) {
             console.error(error);
             res.status(500).json({ message: "Database error" });
