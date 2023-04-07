@@ -1,18 +1,29 @@
 const multer = require('multer');
-const upload = multer().single('file');
+const fs = require('fs');
+const Post = require('../models/post');
 
-const post = (req, res) => {
-  upload(req, res, function (err) {
-    if (err instanceof multer.MulterError) {
-      // Multer hatası işleme
-      return res.status(500).send({ message: err.message });
-    } else if (err) {
-      // Diğer hataların işlenmesi
-      return res.status(500).send({ message: 'Bir hata oluştu.' });
-    }
-    // Yükleme başarılı, burada yapılacak işlemler
-    res.json({ file: req.file });
-  });
+const uploadMiddleware = multer({ dest: './uploads' }).single('file');
+
+const post = async (req, res) => {
+    const { title, summary, content } = req.body
+    console.log(req.body)
+    uploadMiddleware(req, res, (err) => {
+        if (err) {
+            res.status(500).send(err);
+        } else {
+            const { originalname, path } = req.file
+            const parts = originalname.split('.');
+            const ext = parts[parts.length - 1];
+            const filename = path + '.' + ext;
+            fs.renameSync(path, filename)
+        }
+
+    })
+    // Post.create({
+
+    // })
+    res.json({title})
+
 }
 
-module.exports = { post };
+module.exports = { post };  
