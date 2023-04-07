@@ -1,10 +1,10 @@
 const express = require('express');
-const { post} = require('../controller/post.js');
 const router = express.Router();
-const multer = require('multer');
 
-const uploadMiddleware = multer({dest: "uploads/"})
+const { post } = require('../controller/post.js');
 
-router.post('/', uploadMiddleware.single('file'), post);
+
+
+router.post('/', post);
 
 module.exports = router;
