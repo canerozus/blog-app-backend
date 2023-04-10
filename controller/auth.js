@@ -47,4 +47,4 @@ const logout = (req, res) => {
     }).status(200).json("User logged out.")
 }
 
-module.exports = { register, login, logout };  
+module.exports = { register, login, logout };
