@@ -10,7 +10,7 @@ const post = async (req, res) => {
             return res.status(500).json({ message: "Failed to upload" });
         }
         const { title, summary, content } = req.body;
-        if (!title ||!summary || content.length <= 50) {
+        if (!title || !summary || content.length <= 50) {
             return res.status(400).json({ message: "Missing required fields! (Content length must at least 50 letter.)" });
         }
         let fileUrl;
@@ -27,7 +27,7 @@ const post = async (req, res) => {
                 title,
                 summary,
                 content,
-                fileUrl 
+                fileUrl
             });
             res.json({ message: 'Post has been created', post });
         } catch (error) {
@@ -36,5 +36,8 @@ const post = async (req, res) => {
         }
     });
 };
+const getPost = async(req, res) => {
+    res.json(await Post.find());
+}
 
-module.exports = { post };  
+module.exports = { post, getPost };  
