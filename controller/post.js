@@ -1,9 +1,14 @@
 const multer = require('multer');
 const fs = require('fs');
 const Post = require('../models/post');
+const jwt = require('jsonwebtoken');
 
 const post = async (req, res) => {
-    const uploadMiddleware = multer({ dest: './uploads' }).single('file');
+
+    const uploadMiddleware = multer({ dest: 'uploads/' }).single('file');
+
+    let fileUrl = null; 
+
     uploadMiddleware(req, res, async (err) => {
         if (err) {
             console.error(err);
@@ -13,7 +18,6 @@ const post = async (req, res) => {
         if (!title || !summary || content.length <= 50) {
             return res.status(400).json({ message: "Missing required fields! (Content length must at least 50 letter.)" });
         }
-        let fileUrl;
         if (req.file) {
             const { originalname, path } = req.file;
             const parts = originalname.split('.');
@@ -23,21 +27,39 @@ const post = async (req, res) => {
             fileUrl = filename;
         }
         try {
-            const post = await Post.create({
-                title,
-                summary,
-                content,
-                fileUrl
-            });
-            res.json({ message: 'Post has been created', post });
+            const { token } = req.cookies;
+            if (token) {
+                jwt.verify(token, "secretKey", {}, async (err, info) => {
+                    if (err) throw err;
+                    const post = await Post.create({
+                        title,
+                        summary,
+                        content,
+                        cover:fileUrl, 
+                        author:info.id
+                    });
+                    
+                    res.json({ message: 'Post has been created', post });
+
+                })
+            } else {
+                return res.status(200).json("no token found")
+            }
+
         } catch (error) {
             console.error(error);
             res.status(500).json({ message: "Database error" });
         }
     });
 };
-const getPost = async(req, res) => {
-    res.json(await Post.find());
+
+const getPost = async (req, res) => {
+    res.json(
+        await Post.find()
+        .populate('author', ["username"])
+        .sort({createdAt: -1})
+        .limit(20)
+        );
 }
 
 module.exports = { post, getPost };  
