@@ -51,7 +51,7 @@ const post = async (req, res) => {
 };
 const getSinglePost = async (req, res) => {
     const {id} = req.params;
-    const postDoc = await Post.findById(id)
+    const postDoc = await Post.findById(id).populate('author', ["username"])
     res.json(postDoc);
 }
 const getPost = async (req, res) => {
