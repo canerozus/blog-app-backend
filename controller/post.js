@@ -4,11 +4,8 @@ const Post = require('../models/post');
 const jwt = require('jsonwebtoken');
 
 const post = async (req, res) => {
-
     const uploadMiddleware = multer({ dest: 'uploads/' }).single('file');
-
-    let fileUrl = null; 
-
+    let fileUrl = null;
     uploadMiddleware(req, res, async (err) => {
         if (err) {
             console.error(err);
@@ -35,10 +32,10 @@ const post = async (req, res) => {
                         title,
                         summary,
                         content,
-                        cover:fileUrl, 
-                        author:info.id
+                        cover: fileUrl,
+                        author: info.id
                     });
-                    
+
                     res.json({ message: 'Post has been created', post });
 
                 })
@@ -52,14 +49,18 @@ const post = async (req, res) => {
         }
     });
 };
-
+const getSinglePost = async (req, res) => {
+    const {id} = req.params;
+    const postDoc = await Post.findById(id)
+    res.json(postDoc);
+}
 const getPost = async (req, res) => {
     res.json(
         await Post.find()
-        .populate('author', ["username"])
-        .sort({createdAt: -1})
-        .limit(20)
-        );
+            .populate('author', ["username"])
+            .sort({ createdAt: -1 })
+            .limit(20)
+    );
 }
 
-module.exports = { post, getPost };  
+module.exports = { post, getPost, getSinglePost };  
