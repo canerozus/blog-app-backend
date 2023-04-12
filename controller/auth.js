@@ -32,6 +32,7 @@ const login = async (req, res) => {
                 username
             })
             })
+            
         } else {
             return res.status(403).json('Invalid username or password!');
         }
@@ -45,6 +46,7 @@ const logout = (req, res) => {
         secure: true,
         sameSite: "none"
     }).status(200).json("User logged out.")
+    
 }
 
 module.exports = { register, login, logout };
