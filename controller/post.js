@@ -114,7 +114,6 @@ const editPost = async (req, res) => {
         }
     });
 };
-
 const getPost = async (req, res) => {
     res.json(
         await Post.find()
