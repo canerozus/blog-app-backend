@@ -53,7 +53,12 @@ const getSinglePost = async (req, res) => {
     const {id} = req.params;
     const postDoc = await Post.findById(id).populate('author', ["username"])
     res.json(postDoc);
+    
 }
+const deletePost = async (req, res) => { 
+    res.json(await Post.findById(id).deleteOne())
+}
+
 const getPost = async (req, res) => {
     res.json(
         await Post.find()
@@ -63,4 +68,4 @@ const getPost = async (req, res) => {
     );
 }
 
-module.exports = { post, getPost, getSinglePost };  
+module.exports = { post, getPost, getSinglePost,deletePost };  
