@@ -55,9 +55,16 @@ const getSinglePost = async (req, res) => {
     res.json(postDoc);
     
 }
-const deletePost = async (req, res) => { 
-    res.json(await Post.findById(id).deleteOne())
-}
+const deletePost = async (req, res) => {
+    const { id } = req.params;
+    try {
+      const deletedPost = await Post.deleteOne({ _id: id });
+      res.json({deletedPost, message:"Post Deleted"});
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Internal Server Error");
+    }
+  };
 
 const getPost = async (req, res) => {
     res.json(
