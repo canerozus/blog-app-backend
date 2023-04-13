@@ -12,7 +12,7 @@ app.use('/uploads', express.static(__dirname + '/uploads'))
 app.use(cookieParser());
 app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
 app.use(express.json());
-mongoose.connect(process.env.MONGODB_URL, { useNewUrlParser: true, useCreateIndex: true, })
+mongoose.connect("mongodb+srv://canerozus:d3Jp7zlIAobueKhB@cluster0.a7dt3ll.mongodb.net/?retryWrites=true&w=majority", { useNewUrlParser: true, useCreateIndex: true, })
 
 app.use("/api/profile", profileRoutes);
 app.use("/api/auth", authRoutes);
