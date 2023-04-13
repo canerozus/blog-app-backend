@@ -2,7 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const app = express();
-const dotenv= require("dotenv")
+const dotenv = require("dotenv")
 const cookieParser = require("cookie-parser");
 const authRoutes = require('./routes/auth.js');
 const profileRoutes = require('./routes/profile.js');
@@ -10,9 +10,9 @@ const postRoutes = require('./routes/post.js');
 dotenv.config()
 app.use('/uploads', express.static(__dirname + '/uploads'))
 app.use(cookieParser());
-app.use(cors({credentials:true, origin:"http://localhost:3000"}));
+app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
 app.use(express.json());
-mongoose.connect(process.env.MONGODB_URL)
+mongoose.connect(process.env.MONGODB_URL, { useNewUrlParser: true, useCreateIndex: true, })
 
 app.use("/api/profile", profileRoutes);
 app.use("/api/auth", authRoutes);
