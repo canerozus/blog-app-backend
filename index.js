@@ -18,7 +18,9 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/post", postRoutes);
 
-
+app.get("/", (req, res) => {
+    res.json("server start")
+})
 app.listen(process.env.PORT || 8800, () => {
     console.log("server listening on 8800");
 })
