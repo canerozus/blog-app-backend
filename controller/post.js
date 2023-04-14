@@ -2,9 +2,7 @@ const multer = require('multer');
 const fs = require('fs');
 const Post = require('../models/post');
 const jwt = require('jsonwebtoken');
-
 const AWS = require('aws-sdk');
-const multer = require('multer');
 const multerS3 = require('multer-s3');
 const { v4: uuidv4 } = require('uuid');
 
