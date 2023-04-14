@@ -4,46 +4,61 @@ const Post = require('../models/post');
 const jwt = require('jsonwebtoken');
 const AWS = require('aws-sdk');
 const multerS3 = require('multer-s3');
-const { v4: uuidv4 } = require('uuid');
+const { promisify } = require('util');
+const unlinkAsync = promisify(fs.unlink);
 
-const uploadMiddleware = multer({ dest: 'uploads/' }).single('file');
-
-const s3 = new AWS.S3({
-  accessKeyId: process.env.S3_ACCESS_KEY,
-  secretAccessKey: process.env.S3_SECRET_KEY,
+const s3 = new aws.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION,
 });
 
+const uploadToS3 = async (file, bucketName) => {
+  try {
+    const params = {
+      Bucket: bucketName,
+      Key: `${Date.now()}-${file.originalname}`,
+      Body: file.buffer,
+      ACL: 'public-read',
+      ContentType: file.mimetype,
+    };
+
+    const { Location } = await s3.upload(params).promise();
+    return Location;
+  } catch (error) {
+    console.error(error);
+    throw new Error('Failed to upload image to S3');
+  }
+};
+
 const post = async (req, res) => {
+  const uploadMiddleware = multer({ dest: 'uploads/' }).single('file');
   let fileUrl = null;
+
   uploadMiddleware(req, res, async (err) => {
     if (err) {
       console.error(err);
-      return res.status(500).json({ message: "Failed to upload" });
+      return res.status(500).json({ message: 'Failed to upload' });
     }
 
     const { title, summary, content } = req.body;
+
     if (!title || !summary || content.length <= 50) {
-      return res.status(400).json({ message: "Missing required fields! (Content length must at least 50 letter.)" });
+      await unlinkAsync(req.file.path);
+      return res
+        .status(400)
+        .json({ message: 'Missing required fields! (Content length must at least 50 letter.)' });
     }
 
     if (req.file) {
-      const { originalname, buffer } = req.file;
-      const parts = originalname.split('.');
-      const ext = parts[parts.length - 1];
-      const filename = Date.now() + '.' + ext;
-
       try {
-        const params = {
-          Bucket: process.env.AWS_BUCKET_NAME,
-          Key: filename,
-          Body: buffer,
-        };
-
-        const { Location } = await s3.upload(params).promise();
-        fileUrl = Location;
+        const bucketName = 'your-bucket-name'; // S3 bucket name
+        fileUrl = await uploadToS3(req.file, bucketName);
+        await unlinkAsync(req.file.path);
       } catch (error) {
         console.error(error);
-        return res.status(500).json({ message: "Failed to upload" });
+        await unlinkAsync(req.file.path);
+        return res.status(500).json({ message: 'Failed to upload image to S3' });
       }
     }
 
@@ -57,17 +72,17 @@ const post = async (req, res) => {
             summary,
             content,
             cover: fileUrl,
-            author: info.id
+            author: info.id,
           });
 
           res.json({ message: 'Post has been created', post });
-        })
+        });
       } else {
-        return res.status(200).json("no token found")
+        return res.status(200).json('no token found');
       }
     } catch (error) {
       console.error(error);
-      res.status(500).json({ message: "Database error" });
+      res.status(500).json({ message: 'Database error' });
     }
   });
 };
