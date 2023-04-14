@@ -52,7 +52,7 @@ const post = async (req, res) => {
 
     if (req.file) {
       try {
-        const bucketName = process.env.AWS_BUCKET_NAME; // S3 bucket name
+        const bucketName = process.env.AWS_BUCKET_NAME; 
         fileUrl = await uploadToS3(req.file, bucketName);
         await unlinkAsync(req.file.path);
       } catch (error) {
