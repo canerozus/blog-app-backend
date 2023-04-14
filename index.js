@@ -10,7 +10,7 @@ const postRoutes = require('./routes/post.js');
 dotenv.config()
 app.use('/uploads', express.static(__dirname + '/uploads'))
 app.use(cookieParser());
-app.use(cors());
+app.use(cors({ credentials: true}));
 app.use(express.json());
 mongoose.connect(process.env.MONGODB_URL)
 
