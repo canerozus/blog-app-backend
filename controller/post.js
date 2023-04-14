@@ -3,51 +3,67 @@ const fs = require('fs');
 const Post = require('../models/post');
 const jwt = require('jsonwebtoken');
 
+const AWS = require('aws-sdk');
+const multer = require('multer');
+const multerS3 = require('multer-s3');
+const { v4: uuidv4 } = require('uuid');
+
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY,
+  secretAccessKey: process.env.AWS_SECRET_KEY,
+});
+
+const upload = multer({
+  storage: multerS3({
+    s3,
+    bucket: process.env.AWS_BUCKET_NAME,
+    key: function (req, file, cb) {
+      const extension = file.originalname.split('.').pop();
+      const fileName = `${uuidv4()}.${extension}`;
+      cb(null, fileName);
+    },
+  }),
+}).single('file');
+
 const post = async (req, res) => {
-    const uploadMiddleware = multer({ dest: 'uploads/' }).single('file');
-    let fileUrl = null;
-    uploadMiddleware(req, res, async (err) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ message: "Failed to upload" });
-        }
-        const { title, summary, content } = req.body;
-        if (!title || !summary || content.length <= 50) {
-            return res.status(400).json({ message: "Missing required fields! (Content length must at least 50 letter.)" });
-        }
-        if (req.file) {
-            const { originalname, path } = req.file;
-            const parts = originalname.split('.');
-            const ext = parts[parts.length - 1];
-            const filename = path + '.' + ext;
-            fs.renameSync(path, filename);
-            fileUrl = filename;
-        }
-        try {
-            const { token } = req.cookies;
-            if (token) {
-                jwt.verify(token, process.env.JWT_SECRET_KEY, {}, async (err, info) => {
-                    if (err) throw err;
-                    const post = await Post.create({
-                        title,
-                        summary,
-                        content,
-                        cover: fileUrl,
-                        author: info.id
-                    });
+  upload(req, res, async (err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Failed to upload" });
+    }
 
-                    res.json({ message: 'Post has been created', post });
+    const { title, summary, content } = req.body;
+    if (!title || !summary || content.length <= 50) {
+      return res.status(400).json({ message: "Missing required fields! (Content length must at least 50 letter.)" });
+    }
 
-                })
-            } else {
-                return res.status(200).json("no token found")
-            }
+    const fileUrl = req.file.location;
 
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ message: "Database error" });
-        }
-    });
+    try {
+      const { token } = req.cookies;
+      if (token) {
+        jwt.verify(token, process.env.JWT_SECRET_KEY, {}, async (err, info) => {
+          if (err) throw err;
+          const post = await Post.create({
+            title,
+            summary,
+            content,
+            cover: fileUrl,
+            author: info.id
+          });
+
+          res.json({ message: 'Post has been created', post });
+
+        })
+      } else {
+        return res.status(200).json("no token found")
+      }
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Database error" });
+    }
+  });
 };
 const getSinglePost = async (req, res) => {
     const { id } = req.params;
