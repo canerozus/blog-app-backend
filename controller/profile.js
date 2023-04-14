@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const profile = async  (req,res) => {
     const {token} = req.cookies;
     if(token){
-    jwt.verify(token, process.env.JWT, {}, (err, info) => {
+    jwt.verify(token, process.env.JWT_SECRET_KEY, {}, (err, info) => {
         if(err) throw err;
         res.json(info) 
         

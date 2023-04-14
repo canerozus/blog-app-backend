@@ -25,7 +25,7 @@ const login = async (req, res) => {
         if(!user) return res.status(401).json("No username found!");
         const passCheck = bcrypt.compareSync(password, user.password);
         if(passCheck){
-            jwt.sign({username,id:user._id},process.env.JWT, (err, token)=>{
+            jwt.sign({username,id:user._id},process.env.JWT_SECRET_KEY, (err, token)=>{
             res.cookie("token", token).json({
                 message:"logging in",
                 id:user._id,
