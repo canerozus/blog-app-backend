@@ -8,8 +8,8 @@ const { promisify } = require('util');
 const unlinkAsync = promisify(fs.unlink);
 
 const s3 = new aws.S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  accessKeyId: process.env.S3_ACCESS_KEY,
+  secretAccessKey: process.env.S3_SECRET_KEY,
   region: process.env.AWS_REGION,
 });
 
@@ -52,7 +52,7 @@ const post = async (req, res) => {
 
     if (req.file) {
       try {
-        const bucketName = 'your-bucket-name'; // S3 bucket name
+        const bucketName = process.env.AWS_BUCKET_NAME; // S3 bucket name
         fileUrl = await uploadToS3(req.file, bucketName);
         await unlinkAsync(req.file.path);
       } catch (error) {
