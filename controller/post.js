@@ -6,25 +6,16 @@ const AWS = require('aws-sdk');
 const multerS3 = require('multer-s3');
 const { v4: uuidv4 } = require('uuid');
 
+const uploadMiddleware = multer({ dest: 'uploads/' }).single('file');
+
 const s3 = new AWS.S3({
   accessKeyId: process.env.S3_ACCESS_KEY,
   secretAccessKey: process.env.S3_SECRET_KEY,
 });
 
-const upload = multer({
-  storage: multerS3({
-    s3,
-    bucket: process.env.AWS_BUCKET_NAME,
-    key: function (req, file, cb) {
-      const extension = file.originalname.split('.').pop();
-      const fileName = `${uuidv4()}.${extension}`;
-      cb(null, fileName);
-    },
-  }),
-}).single('file');
-
 const post = async (req, res) => {
-  upload(req, res, async (err) => {
+  let fileUrl = null;
+  uploadMiddleware(req, res, async (err) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ message: "Failed to upload" });
@@ -35,7 +26,26 @@ const post = async (req, res) => {
       return res.status(400).json({ message: "Missing required fields! (Content length must at least 50 letter.)" });
     }
 
-    const fileUrl = req.file.location;
+    if (req.file) {
+      const { originalname, buffer } = req.file;
+      const parts = originalname.split('.');
+      const ext = parts[parts.length - 1];
+      const filename = Date.now() + '.' + ext;
+
+      try {
+        const params = {
+          Bucket: process.env.AWS_BUCKET_NAME,
+          Key: filename,
+          Body: buffer,
+        };
+
+        const { Location } = await s3.upload(params).promise();
+        fileUrl = Location;
+      } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Failed to upload" });
+      }
+    }
 
     try {
       const { token } = req.cookies;
@@ -51,12 +61,10 @@ const post = async (req, res) => {
           });
 
           res.json({ message: 'Post has been created', post });
-
         })
       } else {
         return res.status(200).json("no token found")
       }
-
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Database error" });
