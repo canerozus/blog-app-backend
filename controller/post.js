@@ -89,7 +89,7 @@ const editPost = async (req, res) => {
         try {
             const { token } = req.cookies;
             if (token) {
-                jwt.verify(token, "secretKey", {}, async (err, info) => {
+                jwt.verify(token, process.env.JWT, {}, async (err, info) => {
                     if (err) throw err;
                     const post = await Post.findOne({ _id: postId, author: info.id });
                     if (!post) {
