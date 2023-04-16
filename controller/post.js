@@ -2,7 +2,7 @@ const multer = require('multer');
 const fs = require('fs');
 const Post = require('../models/post');
 const jwt = require('jsonwebtoken');
-const AWS = require('aws-sdk');
+const AWS = require('@aws-sdk/client-s3');
 const util = require('util');
 const multerS3 = require('multer-s3');
 
@@ -53,7 +53,6 @@ const post = async (req, res) => {
     const info = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
     // Create post in database
-    const { originalname, path } = req.file;
     const fileUrl = req.file.location;
 
     const post = await Post.create({
