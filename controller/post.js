@@ -6,66 +6,76 @@ const AWS = require('aws-sdk');
 const util = require('util');
 const multerS3 = require('multer-s3');
 
+
+
 const s3 = new AWS.S3({
   accessKeyId: process.env.S3_ACCESS_KEY,
   secretAccessKey: process.env.S3_SECRET_KEY,
-  region: process.env.AWS_REGION
-});
-
-const upload = multer({
-  storage: multerS3({
-    s3: s3,
-    bucket: process.env.AWS_BUCKET_NAME,
-    acl: 'public-read',
-    metadata: function (req, file, cb) {
-      cb(null, {fieldName: file.fieldname});
-    },
-    key: function (req, file, cb) {
-      const filename = `${Date.now()}_${file.originalname}`;
-      cb(null, filename);
-    }
-  })
+  region: process.env.AWS_REGION,
+  bucket: process.env.AWS_BUCKET_NAME
 });
 
 const post = async (req, res) => {
-  upload.single('file')(req, res, async (err) => {
-    if (err) {
-      return res.status(500).json({ message: "Failed to upload" });
+  const uploadMiddleware = util.promisify(multer({
+    storage: multerS3({
+      s3: s3,
+      bucket: process.env.AWS_BUCKET_NAME,
+      acl: 'public-read',
+      contentType: multerS3.AUTO_CONTENT_TYPE,
+      key: function (req, file, cb) {
+        const { originalname } = file;
+        const parts = originalname.split('.');
+        const ext = parts[parts.length - 1];
+        const filename = `${Date.now()}.${ext}`;
+        cb(null, filename);
+      }
+    })
+  }).single('file'));
+
+  try {
+    await uploadMiddleware(req, res);
+
+    if (!req.file) {
+      return res.status(400).json({ message: "File not found!" });
     }
+
     const { title, summary, content } = req.body;
-    if (!title || !summary || content.length <= 30) {
+    if (!title || !summary || content.length <= 50) {
       return res.status(400).json({ message: "Missing required fields! (Content length must be at least 50 characters.)" });
     }
 
-    let fileUrl = null;
-    if (req.file) {
-      fileUrl = req.file.location;
+    const { token } = req.cookies;
+    if (!token) {
+      return res.status(401).json({ message: "No token found." });
     }
 
-    try {
-      const { token } = req.cookies;
-      if (token) {
-        jwt.verify(token, process.env.JWT_SECRET_KEY, {}, async (err, info) => {
-          if (err) throw err;
-
-          const post = await Post.create({
-            title,
-            summary,
-            content,
-            cover: fileUrl,
-            author: info.id
-          });
-          console.log(post)
-          res.json({ message: 'Post has been created', post });
-        });
-      } else {
-        return res.status(401).json({ message: "No token found." });
+    jwt.verify(token, process.env.JWT_SECRET_KEY, {}, async (err, info) => {
+      if (err) {
+        console.error(err);
+        return res.status(401).json({ message: "Invalid token." });
       }
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Database error" });
-    }
-  })
+
+      const { originalname, path } = req.file;
+      const parts = originalname.split('.');
+      const ext = parts[parts.length - 1];
+      const filename = `${Date.now()}.${ext}`;
+
+      const fileUrl = req.file.location;
+
+      const post = await Post.create({
+        title,
+        summary,
+        content,
+        cover: fileUrl,
+        author: info.id
+      });
+
+      res.json({ message: 'Post has been created', post });
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 };
 const getSinglePost = async (req, res) => {
   const { id } = req.params;
