@@ -13,7 +13,6 @@ app.use(cookieParser());
 app.use(cors({ credentials: true, origin: ['https://blog-app-client-beta.vercel.app', "http://localhost:3000"]}));
 app.use(express.json());
 mongoose.connect(process.env.MONGODB_URL)
-
 app.use("/api/profile", profileRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/post", postRoutes);
