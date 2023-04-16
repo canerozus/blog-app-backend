@@ -4,6 +4,7 @@ const Post = require('../models/post');
 const jwt = require('jsonwebtoken');
 const AWS = require('aws-sdk');
 const util = require('util');
+const multerS3 = require('multer-s3');
 
 const s3 = new AWS.S3({
   accessKeyId: process.env.S3_ACCESS_KEY,
@@ -11,9 +12,23 @@ const s3 = new AWS.S3({
   region: process.env.AWS_REGION
 });
 
+const upload = multer({
+  storage: multerS3({
+    s3: s3,
+    bucket: process.env.AWS_BUCKET_NAME,
+    acl: 'public-read',
+    metadata: function (req, file, cb) {
+      cb(null, {fieldName: file.fieldname});
+    },
+    key: function (req, file, cb) {
+      const filename = `${Date.now()}_${file.originalname}`;
+      cb(null, filename);
+    }
+  })
+});
+
 const post = async (req, res) => {
-  const uploadMiddleware = util.promisify(multer({ dest: 'uploads/' }).single('file'));
-  uploadMiddleware(req, res, async (err) => {
+  upload.single('file')(req, res, async (err) => {
     if (err) {
       return res.status(500).json({ message: "Failed to upload" });
     }
@@ -24,22 +39,7 @@ const post = async (req, res) => {
 
     let fileUrl = null;
     if (req.file) {
-      const { originalname, path } = req.file;
-      const parts = originalname.split('.');
-      const ext = parts[parts.length - 1];
-      const filename = `${Date.now()}.${ext}`;
-
-      const fileContent = fs.readFileSync(path);
-
-      const params = {
-        Bucket: process.env.AWS_BUCKET_NAME,
-        Key: filename,
-        Body: fileContent,
-        ContentType: `image/${ext}`
-      };
-
-      const uploadedData = await s3.upload(params).promise();
-      fileUrl = uploadedData.Location;
+      fileUrl = req.file.location;
     }
 
     try {
