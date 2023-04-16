@@ -7,24 +7,10 @@ const cookieParser = require("cookie-parser");
 const authRoutes = require('./routes/auth.js');
 const profileRoutes = require('./routes/profile.js');
 const postRoutes = require('./routes/post.js');
-dotenv.config()
-const corsOpts = {
-    origin: '*',
-    credentials: true,
-    methods: [
-      'GET',
-      'POST',
-      "PUT",
-      "DELETE"
-    ],
-  
-    allowedHeaders: [
-      'Content-Type',
-    ],
-  };
+dotenv.config();
 app.use('/uploads', express.static(__dirname + '/uploads'))
 app.use(cookieParser());
-app.use(cors(corsOpts));
+app.use(cors({ credentials: true, origin:['https://blog-app-client-beta.vercel.app','http://localhost:3000']}));
 app.use(express.json());
 mongoose.connect(process.env.MONGODB_URL)
 app.use("/api/profile", profileRoutes);
