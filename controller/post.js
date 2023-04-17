@@ -6,6 +6,8 @@ const AWS = require('@aws-sdk/client-s3');
 const util = require('util');
 const multerS3 = require('multer-s3');
 
+const uuid = require('uuid').v4;
+
 const s3 = new AWS.S3({
   accessKeyId: process.env.S3_ACCESS_KEY,
   secretAccessKey: process.env.S3_SECRET_KEY,
@@ -13,58 +15,64 @@ const s3 = new AWS.S3({
   bucket: process.env.AWS_BUCKET_NAME
 });
 
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5 MB
+  },
+});
+
 const post = async (req, res) => {
   try {
     // Upload file to S3
-    const uploadMiddleware = util.promisify(multer({
-      storage: multerS3({
-        s3: s3,
-        bucket: process.env.AWS_BUCKET_NAME,
-        acl: 'public-read',
-        contentType: multerS3.AUTO_CONTENT_TYPE,
-        key: function (req, file, cb) {
-          const { originalname } = file;
-          const parts = originalname.split('.');
-          const ext = parts[parts.length - 1];
-          const filename = `${Date.now()}.${ext}`;
-          cb(null, filename);
-        }
-      })
-    }).single('file'));
+    const uploadMiddleware = upload.single('file');
 
-    await uploadMiddleware(req, res);
+    uploadMiddleware(req, res, async (err) => {
+      if (err) {
+        return res.status(400).json({ message: "File upload error!" });
+      }
 
-    // Handle missing file error
-    if (!req.file) {
-      return res.status(400).json({ message: "File not found!" });
-    }
+      // Handle missing file error
+      if (!req.file) {
+        return res.status(400).json({ message: "File not found!" });
+      }
 
-    // Handle missing or invalid request body fields
-    const { title, summary, content } = req.body;
-    if (!title || !summary || content.length <= 50) {
-      return res.status(400).json({ message: "Missing required fields! (Content length must be at least 50 characters.)" });
-    }
+      // Handle missing or invalid request body fields
+      const { title, summary, content } = req.body;
+      if (!title || !summary || content.length <= 50) {
+        return res.status(400).json({ message: "Missing required fields! (Content length must be at least 50 characters.)" });
+      }
 
-    // Verify user authentication
-    const { token } = req.cookies;
-    if (!token) {
-      return res.status(401).json({ message: "No token found." });
-    }
-    const info = jwt.verify(token, process.env.JWT_SECRET_KEY);
+      // Verify user authentication
+      const { token } = req.cookies;
+      if (!token) {
+        return res.status(401).json({ message: "No token found." });
+      }
+      const info = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
-    // Create post in database
-    const fileUrl = req.file.location;
+      // Create post in database
+      const fileKey = `${uuid()}-${req.file.originalname}`;
+      const params = {
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: fileKey,
+        Body: req.file.buffer,
+        ContentType: req.file.mimetype,
+        ACL: 'public-read',
+      };
 
-    const post = await Post.create({
-      title,
-      summary,
-      content,
-      cover: fileUrl,
-      author: info.id
+      const s3Data = await s3.upload(params).promise();
+
+      const post = await Post.create({
+        title,
+        summary,
+        content,
+        cover: s3Data.Location,
+        author: info.id
+      });
+
+      // Send response
+      res.json({ message: 'Post has been created', post });
     });
-
-    // Send response
-    res.json({ message: 'Post has been created', post });
   } catch (error) {
     console.error(error.message);
     res.status(500).json({ message: "Internal Server Error" });
