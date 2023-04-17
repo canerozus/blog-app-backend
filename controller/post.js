@@ -10,7 +10,7 @@ const s3 = new AWS.S3({
   accessKeyId: process.env.S3_ACCESS_KEY,
   secretAccessKey: process.env.S3_SECRET_KEY,
   region: process.env.AWS_REGION,
-  bucket: process.env.AWS_BUCKET_NAME
+  bucket: "eu-central-1"
 });
 
 const post = async (req, res) => {
@@ -19,7 +19,7 @@ const post = async (req, res) => {
     const uploadMiddleware = util.promisify(multer({
       storage: multerS3({
         s3: s3,
-        bucket: process.env.AWS_BUCKET_NAME,
+        bucket: "eu-central-1",
         acl: 'public-read',
         contentType: multerS3.AUTO_CONTENT_TYPE,
         key: function (req, file, cb) {
