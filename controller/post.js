@@ -2,36 +2,37 @@ const multer = require('multer');
 const fs = require('fs');
 const Post = require('../models/post');
 const jwt = require('jsonwebtoken');
-const AWS = require('@aws-sdk/client-sns');
+const AWS = require('@aws-sdk/client-s3');
 const util = require('util');
 const multerS3 = require('multer-s3');
 
 const s3 = new AWS.S3({
   accessKeyId: process.env.S3_ACCESS_KEY,
   secretAccessKey: process.env.S3_SECRET_KEY,
-  region: "eu-central-1"
+  region: "eu-central-1",
+  bucket: process.env.AWS_BUCKET_NAME,
 });
-
-const upload = multer({
-  storage: multerS3({
-    s3: s3,
-    bucket: process.env.AWS_BUCKET_NAME,
-    acl: 'public-read',
-    contentType: multerS3.AUTO_CONTENT_TYPE,
-    key: function (req, file, cb) {
-      const { originalname } = file;
-      const parts = originalname.split('.');
-      const ext = parts[parts.length - 1];
-      const filename = `${Date.now()}.${ext}`;
-      cb(null, filename);
-    }
-  })
-}).single('file');
 
 const post = async (req, res) => {
   try {
     // Upload file to S3
-    await util.promisify(upload)(req, res);
+    const uploadMiddleware = util.promisify(multer({
+      storage: multerS3({
+        s3: s3,
+        bucket: process.env.AWS_BUCKET_NAME,
+        acl: 'public-read',
+        contentType: multerS3.AUTO_CONTENT_TYPE,
+        key: function (req, file, cb) {
+          const { originalname } = file;
+          const parts = originalname.split('.');
+          const ext = parts[parts.length - 1];
+          const filename = `${Date.now()}.${ext}`;
+          cb(null, filename);
+        }
+      })
+    }).single('file'));
+
+    await uploadMiddleware(req, res);
 
     // Handle missing file error
     if (!req.file) {
@@ -69,7 +70,6 @@ const post = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
 const getSinglePost = async (req, res) => {
   const { id } = req.params;
   const postDoc = await Post.findById(id).populate('author', ["username"])
